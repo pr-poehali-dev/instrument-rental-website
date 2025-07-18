@@ -248,6 +248,7 @@ export default function Index() {
                           size="sm" 
                           disabled={!tool.available}
                           className="bg-blue-600 hover:bg-blue-700"
+                          onClick={() => window.location.href = `/product/${tool.id}`}
                         >
                           {tool.available ? 'Забронировать' : 'Занято'}
                         </Button>

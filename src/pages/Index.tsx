@@ -91,6 +91,15 @@ export default function Index() {
                 <Icon name="User" className="h-4 w-4 mr-2" />
                 Войти
               </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.location.href = '/admin'}
+                className="text-gray-600 hover:text-blue-600"
+              >
+                <Icon name="Settings" className="h-4 w-4 mr-2" />
+                Админ
+              </Button>
             </div>
           </div>
         </div>

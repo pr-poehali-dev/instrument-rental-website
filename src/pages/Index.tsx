@@ -8,6 +8,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useCart } from '@/contexts/CartContext';
+import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -15,6 +17,7 @@ import { ru } from 'date-fns/locale';
 export default function Index() {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [searchQuery, setSearchQuery] = useState('');
+  const { addToCart, getTotalItems } = useCart();
 
   const tools = [
     {
@@ -87,10 +90,23 @@ export default function Index() {
                 <Icon name="Phone" className="h-4 w-4 mr-2" />
                 +7 (495) 123-45-67
               </Button>
-              <Button size="sm">
-                <Icon name="User" className="h-4 w-4 mr-2" />
-                Войти
-              </Button>
+              <Link to="/cart">
+                <Button variant="outline" size="sm" className="relative">
+                  <Icon name="ShoppingCart" className="h-4 w-4 mr-2" />
+                  Корзина
+                  {getTotalItems() > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                      {getTotalItems()}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+              <Link to="/profile">
+                <Button size="sm">
+                  <Icon name="User" className="h-4 w-4 mr-2" />
+                  Войти
+                </Button>
+              </Link>
               <Button 
                 variant="outline" 
                 size="sm"
@@ -257,9 +273,20 @@ export default function Index() {
                           size="sm" 
                           disabled={!tool.available}
                           className="bg-blue-600 hover:bg-blue-700"
-                          onClick={() => window.location.href = `/product/${tool.id}`}
+                          onClick={() => {
+                            if (tool.available) {
+                              addToCart({
+                                id: tool.id,
+                                name: tool.name,
+                                price: tool.price,
+                                image: tool.image,
+                                category: tool.category,
+                                duration: 1
+                              });
+                            }
+                          }}
                         >
-                          {tool.available ? 'Забронировать' : 'Занято'}
+                          {tool.available ? 'В корзину' : 'Занято'}
                         </Button>
                       </div>
                     </CardContent>

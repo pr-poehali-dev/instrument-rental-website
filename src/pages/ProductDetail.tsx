@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarContent, AvatarFallback } from '@/components/ui/avatar';
+import { useCart } from '@/lib/cartContext';
+import { Link, useParams } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Icon from '@/components/ui/icon';
@@ -117,27 +119,82 @@ const reviews = [
   }
 ];
 
+// Похожие товары
+const relatedTools = [
+  {
+    id: 2,
+    name: 'Отбойный молоток Makita HM1317C',
+    brand: 'Makita',
+    price: 2500,
+    rating: 4.7,
+    image: '/img/cc0687bd-1892-4c49-8820-2d326de6668b.jpg',
+    available: true
+  },
+  {
+    id: 3,
+    name: 'Перфоратор DeWalt D25263K',
+    brand: 'DeWalt',
+    price: 900,
+    rating: 4.6,
+    image: '/img/a1f08a16-886e-4eb0-836e-611ef0c78857.jpg',
+    available: true
+  },
+  {
+    id: 4,
+    name: 'Перфоратор Hilti TE 7-C',
+    brand: 'Hilti',
+    price: 1800,
+    rating: 4.9,
+    image: '/img/5e130715-b755-4ab5-82af-c9e448995766.jpg',
+    available: false
+  }
+];
+
 export default function ProductDetail() {
+  const { addToCart } = useCart();
+  const { id } = useParams();
+  
   const [selectedImage, setSelectedImage] = useState(0);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [rentalDays, setRentalDays] = useState(1);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewName, setReviewName] = useState('');
+  const [reviewText, setReviewText] = useState('');
 
   const selectedPeriod = toolData.rentalPeriods.find(p => p.days === rentalDays) || toolData.rentalPeriods[0];
   const totalPrice = selectedPeriod.price * quantity;
   const savings = (toolData.price * rentalDays * quantity) - totalPrice;
 
   const handleAddToCart = () => {
-    console.log('Add to cart:', {
-      tool: toolData.id,
-      startDate,
-      endDate,
-      days: rentalDays,
-      quantity,
-      price: totalPrice
+    addToCart({
+      id: toolData.id,
+      name: toolData.name,
+      price: Math.round(totalPrice / rentalDays),
+      image: toolData.images[0],
+      category: toolData.category,
+      duration: rentalDays
     });
+  };
+  
+  const handleSubmitReview = () => {
+    if (reviewRating > 0 && reviewName.trim() && reviewText.trim()) {
+      console.log('Submitting review:', {
+        rating: reviewRating,
+        name: reviewName,
+        text: reviewText,
+        toolId: toolData.id
+      });
+      // Сброс формы
+      setReviewRating(0);
+      setReviewName('');
+      setReviewText('');
+      alert('Спасибо за ваш отзыв!');
+    } else {
+      alert('Пожалуйста, заполните все поля');
+    }
   };
 
   return (
@@ -151,8 +208,8 @@ export default function ProductDetail() {
               <span className="text-2xl font-bold text-gray-900">ToolRental</span>
             </div>
             <nav className="hidden md:flex space-x-8">
-              <a href="/" className="text-gray-600 hover:text-blue-600 transition-colors">Главная</a>
-              <a href="/catalog" className="text-gray-600 hover:text-blue-600 transition-colors">Каталог</a>
+              <Link to="/" className="text-gray-600 hover:text-blue-600 transition-colors">Главная</Link>
+              <Link to="/catalog" className="text-gray-600 hover:text-blue-600 transition-colors">Каталог</Link>
               <a href="#services" className="text-gray-600 hover:text-blue-600 transition-colors">Услуги</a>
               <a href="#about" className="text-gray-600 hover:text-blue-600 transition-colors">О нас</a>
             </nav>
@@ -168,9 +225,9 @@ export default function ProductDetail() {
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <nav className="flex items-center space-x-2 text-sm">
-            <a href="/" className="text-gray-600 hover:text-blue-600">Главная</a>
+            <Link to="/" className="text-gray-600 hover:text-blue-600">Главная</Link>
             <Icon name="ChevronRight" className="h-4 w-4 text-gray-400" />
-            <a href="/catalog" className="text-gray-600 hover:text-blue-600">Каталог</a>
+            <Link to="/catalog" className="text-gray-600 hover:text-blue-600">Каталог</Link>
             <Icon name="ChevronRight" className="h-4 w-4 text-gray-400" />
             <span className="text-gray-900">{toolData.name}</span>
           </nav>
@@ -587,7 +644,10 @@ export default function ProductDetail() {
                             <Icon 
                               key={i} 
                               name="Star" 
-                              className="h-6 w-6 text-gray-300 cursor-pointer hover:text-yellow-400"
+                              className={`h-6 w-6 cursor-pointer transition-colors ${
+                                i < reviewRating ? 'text-yellow-400 fill-current' : 'text-gray-300 hover:text-yellow-400'
+                              }`}
+                              onClick={() => setReviewRating(i + 1)}
                             />
                           ))}
                         </div>
@@ -596,7 +656,11 @@ export default function ProductDetail() {
                         <label className="text-sm font-medium text-gray-900 mb-2 block">
                           Ваше имя
                         </label>
-                        <Input placeholder="Введите ваше имя" />
+                        <Input 
+                          placeholder="Введите ваше имя" 
+                          value={reviewName}
+                          onChange={(e) => setReviewName(e.target.value)}
+                        />
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-900 mb-2 block">
@@ -605,9 +669,14 @@ export default function ProductDetail() {
                         <Textarea 
                           placeholder="Расскажите о своем опыте использования..."
                           rows={4}
+                          value={reviewText}
+                          onChange={(e) => setReviewText(e.target.value)}
                         />
                       </div>
-                      <Button className="bg-blue-600 hover:bg-blue-700">
+                      <Button 
+                        className="bg-blue-600 hover:bg-blue-700"
+                        onClick={handleSubmitReview}
+                      >
                         Отправить отзыв
                       </Button>
                     </div>
@@ -616,6 +685,75 @@ export default function ProductDetail() {
               </div>
             </TabsContent>
           </Tabs>
+        </div>
+        
+        {/* Similar Products */}
+        <div className="mt-16">
+          <h2 className="text-2xl font-bold text-gray-900 mb-8">Похожие товары</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {relatedTools.map((tool) => (
+              <Card key={tool.id} className="hover:shadow-lg transition-shadow">
+                <div className="relative">
+                  <img 
+                    src={tool.image} 
+                    alt={tool.name}
+                    className="w-full h-48 object-cover rounded-t-lg"
+                  />
+                  {!tool.available && (
+                    <div className="absolute top-2 right-2">
+                      <Badge variant="secondary">Занято</Badge>
+                    </div>
+                  )}
+                </div>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <Link to={`/product/${tool.id}`}>
+                      <h3 className="font-semibold text-lg hover:text-blue-600 transition-colors">
+                        {tool.name}
+                      </h3>
+                    </Link>
+                    <div className="flex items-center space-x-1">
+                      <Icon name="Star" className="h-4 w-4 text-yellow-400 fill-current" />
+                      <span className="text-sm text-gray-600">{tool.rating}</span>
+                    </div>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">{tool.brand}</p>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl font-bold text-blue-600">
+                      {tool.price}₽<span className="text-sm text-gray-600">/день</span>
+                    </span>
+                    <div className="flex space-x-2">
+                      <Link to={`/product/${tool.id}`}>
+                        <Button variant="outline" size="sm">
+                          <Icon name="Eye" className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <Button 
+                        size="sm" 
+                        disabled={!tool.available}
+                        className="bg-blue-600 hover:bg-blue-700"
+                        onClick={() => {
+                          if (tool.available) {
+                            addToCart({
+                              id: tool.id,
+                              name: tool.name,
+                              price: tool.price,
+                              image: tool.image,
+                              category: toolData.category,
+                              duration: 1
+                            });
+                          }
+                        }}
+                      >
+                        {tool.available ? 'В корзину' : 'Занято'}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     </div>

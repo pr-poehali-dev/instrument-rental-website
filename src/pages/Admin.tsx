@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -6,8 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import Icon from '@/components/ui/icon';
+import AdminSidebar from '@/components/AdminSidebar';
 
 const AdminPanel = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const stats = [
@@ -89,34 +91,46 @@ const AdminPanel = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Icon name="Settings" size={32} className="text-blue-600" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Админ-панель</h1>
-                <p className="text-gray-600">Управление инструментами RentTools</p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+      {/* Sidebar */}
+      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      
+      {/* Main Content */}
+      <div className="flex-1 lg:ml-64">
+        {/* Header */}
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="lg:hidden"
+                  onClick={() => setSidebarOpen(true)}
+                >
+                  <Icon name="Menu" className="h-6 w-6" />
+                </Button>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Панель управления</h1>
+                  <p className="text-gray-600 dark:text-gray-400">Управление сервисом аренды инструментов</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
-                <Icon name="Bell" size={16} className="mr-2" />
-                Уведомления
-              </Button>
-              <Avatar>
-                <AvatarImage src="/img/admin-avatar.jpg" />
-                <AvatarFallback>АП</AvatarFallback>
-              </Avatar>
+              <div className="flex items-center space-x-4">
+                <Button variant="outline" size="sm">
+                  <Icon name="Bell" className="h-4 w-4 mr-2" />
+                  Уведомления
+                </Button>
+                <Avatar>
+                  <AvatarImage src="/img/admin-avatar.jpg" />
+                  <AvatarFallback>АП</AvatarFallback>
+                </Avatar>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Navigation */}
-      <div className="px-6 py-6">
+        {/* Content */}
+        <div className="px-6 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-none lg:inline-flex">
             <TabsTrigger value="dashboard" className="flex items-center space-x-2">
@@ -315,6 +329,7 @@ const AdminPanel = () => {
             </div>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
   );

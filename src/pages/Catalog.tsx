@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useCart } from '@/lib/cartContext';
+import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 
 const tools = [
@@ -159,7 +161,11 @@ const categories = [
 
 const brands = ['Все бренды', 'Bosch', 'DeWalt', 'Makita', 'Metabo', 'Atlas Copco', 'Ingersoll Rand', 'Festool'];
 
+const ITEMS_PER_PAGE = 9;
+
 export default function Catalog() {
+  const { addToCart } = useCart();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedBrand, setSelectedBrand] = useState('Все бренды');
@@ -167,6 +173,7 @@ export default function Catalog() {
   const [sortBy, setSortBy] = useState('name');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showAvailable, setShowAvailable] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const filteredTools = useMemo(() => {
     let filtered = tools.filter(tool => {
@@ -199,6 +206,22 @@ export default function Catalog() {
 
     return filtered;
   }, [searchQuery, selectedCategory, selectedBrand, priceRange, sortBy, showAvailable]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredTools.length / ITEMS_PER_PAGE);
+  const currentTools = filteredTools.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+  
+  const resetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('all');
+    setSelectedBrand('Все бренды');
+    setPriceRange([0, 3000]);
+    setShowAvailable(false);
+    setCurrentPage(1);
+  };
 
   const handleToolClick = (toolId: number) => {
     window.location.href = `/product/${toolId}`;
@@ -396,13 +419,7 @@ export default function Catalog() {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedCategory('all');
-                    setSelectedBrand('Все бренды');
-                    setPriceRange([0, 3000]);
-                    setShowAvailable(false);
-                  }}
+                  onClick={resetFilters}
                 >
                   <Icon name="RotateCcw" className="h-4 w-4 mr-2" />
                   Сбросить фильтры
@@ -413,19 +430,20 @@ export default function Catalog() {
 
           {/* Tools Grid */}
           <div className="lg:col-span-3">
-            {filteredTools.length === 0 ? (
+            {currentTools.length === 0 ? (
               <div className="text-center py-12">
                 <Icon name="Search" className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Ничего не найдено</h3>
                 <p className="text-gray-600">Попробуйте изменить параметры поиска</p>
               </div>
             ) : (
-              <div className={
-                viewMode === 'grid' 
-                  ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
-                  : 'space-y-4'
-              }>
-                {filteredTools.map((tool) => (
+              <>
+                <div className={
+                  viewMode === 'grid' 
+                    ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8'
+                    : 'space-y-4 mb-8'
+                }>
+                  {currentTools.map((tool) => (
                   <Card 
                     key={tool.id} 
                     className={`hover:shadow-lg transition-shadow cursor-pointer ${
@@ -501,19 +519,72 @@ export default function Catalog() {
                           <span className="text-sm text-gray-600">
                             В наличии: {tool.inStock}
                           </span>
-                          <Button 
-                            size="sm" 
-                            disabled={!tool.available}
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            {tool.available ? 'В корзину' : 'Занято'}
-                          </Button>
+                          <div className="flex space-x-2">
+                            <Link to={`/product/${tool.id}`}>
+                              <Button variant="outline" size="sm">
+                                <Icon name="Eye" className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Button 
+                              size="sm" 
+                              disabled={!tool.available}
+                              className="bg-blue-600 hover:bg-blue-700"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (tool.available) {
+                                  addToCart({
+                                    id: tool.id,
+                                    name: tool.name,
+                                    price: tool.price,
+                                    image: tool.image,
+                                    category: tool.category,
+                                    duration: 1
+                                  });
+                                }
+                              }}
+                            >
+                              {tool.available ? 'В корзину' : 'Занято'}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
+                  ))}
+                </div>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center space-x-2">
+                    <Button
+                      variant="outline"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                    >
+                      <Icon name="ChevronLeft" className="h-4 w-4" />
+                    </Button>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                    
+                    <Button
+                      variant="outline"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                    >
+                      <Icon name="ChevronRight" className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
